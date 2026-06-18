@@ -1,0 +1,72 @@
+@import "./tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: var(--font-size-base);
+}
+
+body {
+  margin: 0;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo,
+    system-ui, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, p {
+  margin: 0 0 var(--space-3) 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-6);
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.page-subtitle {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.spacer {
+  flex: 1;
+}
