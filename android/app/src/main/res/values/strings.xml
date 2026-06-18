@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">デルカク✓</string>
+    <string name="title_activity_main">デルカク✓</string>
+    <string name="package_name">com.koredeii.derukaku</string>
+    <string name="custom_url_scheme">com.koredeii.derukaku</string>
+</resources>

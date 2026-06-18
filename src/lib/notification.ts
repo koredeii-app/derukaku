@@ -1,5 +1,27 @@
+import { Capacitor } from "@capacitor/core";
 import type { NotificationPermissionState, Recurrence } from "../types";
 import { matchesDate } from "./recurrence";
+import {
+  getNativePermissionState,
+  requestNativePermission,
+  scheduleNativeSnooze,
+} from "./nativeNotifications";
+
+/** ネイティブ(Capacitor)とWebのどちらで動いていても、適切な方式で通知許可状態を取得する */
+export async function getNotificationPermissionState(): Promise<NotificationPermissionState> {
+  if (Capacitor.isNativePlatform()) {
+    return (await getNativePermissionState()) ? "granted" : "denied";
+  }
+  return getPermissionState();
+}
+
+/** ネイティブ(Capacitor)とWebのどちらで動いていても、適切な方式で通知許可をリクエストする */
+export async function requestNotificationPermission(): Promise<NotificationPermissionState> {
+  if (Capacitor.isNativePlatform()) {
+    return (await requestNativePermission()) ? "granted" : "denied";
+  }
+  return requestPermission();
+}
 
 export function getPermissionState(): NotificationPermissionState {
   if (typeof Notification === "undefined") return "denied";
@@ -53,6 +75,17 @@ export function scheduleDaily(time: string, onFire: () => void): () => void {
 export function scheduleOnce(delayMs: number, onFire: () => void): () => void {
   const timeoutId = setTimeout(onFire, delayMs);
   return () => clearTimeout(timeoutId);
+}
+
+/** スヌーズ通知を仕込む。ネイティブ実行時はアプリを閉じていても発火する。 */
+export async function scheduleSnooze(minutes: number): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    await scheduleNativeSnooze(minutes);
+    return;
+  }
+  scheduleOnce(minutes * 60 * 1000, () => {
+    showNotification("デルカク✓ の時間です", "スヌーズしたチェックを再確認しましょう");
+  });
 }
 
 /**

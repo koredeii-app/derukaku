@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { BottomNav } from "./components/BottomNav";
 import { useSettingsStore } from "./store/settingsStore";
 import { useScheduleNotifications } from "./hooks/useScheduleNotifications";
+import { useNativeNotificationTaps } from "./hooks/useNativeNotificationTaps";
 import HomePage from "./pages/Home/HomePage";
 import OnboardingPage from "./pages/Onboarding/OnboardingPage";
 import ItemsPage from "./pages/Items/ItemsPage";
@@ -28,6 +29,7 @@ export default function App() {
   const navigate = useNavigate();
 
   useScheduleNotifications((scheduleId) => navigate(`/check/from-schedule/${scheduleId}`));
+  useNativeNotificationTaps((scheduleId) => navigate(`/check/from-schedule/${scheduleId}`));
 
   if (!onboardingCompleted && location.pathname !== "/onboarding") {
     return <Navigate to="/onboarding" replace />;

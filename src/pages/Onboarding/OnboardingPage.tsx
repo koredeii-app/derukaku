@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/Button";
 import { useSettingsStore } from "../../store/settingsStore";
-import { requestPermission } from "../../lib/notification";
+import { requestNotificationPermission } from "../../lib/notification";
 
 const SLIDES = [
   {
@@ -26,7 +26,7 @@ export default function OnboardingPage() {
   const isLast = step === SLIDES.length - 1;
 
   const finish = async () => {
-    const result = await requestPermission();
+    const result = await requestNotificationPermission();
     updateSettings({ onboardingCompleted: true, notificationPermission: result });
     navigate("/");
   };

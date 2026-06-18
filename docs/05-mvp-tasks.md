@@ -92,6 +92,22 @@
 | T102 | PWAインストール導線・アイコン・OGP画像作成 | P0 | 0.5 |
 | T103 | プライバシーポリシーページ（ローカル保存のみである旨を明記） | P1 | 0.5 |
 
+## 11. Capacitorネイティブ化（前倒し対応・2026-06-19追加）
+
+PWA単体ではアプリを閉じた状態での通知が技術的に実現不可能と判明したため（[01-system-design.md 5章](01-system-design.md#5-通知機能の技術方針重要な制約事項2026-06-19更新)）、当初「将来構想」だったCapacitor化を前倒しする。
+
+| ID | タスク | 優先度 | 見積 |
+|---|---|---|---|
+| T110 | 開発環境構築（Android Studio／JDK／Android SDK のインストール・確認） | P0 | 0.5 |
+| T111 | `@capacitor/core` `@capacitor/cli` `@capacitor/android` 導入、`npx cap init` / `npx cap add android` | P0 | 0.5 |
+| T112 | `@capacitor/local-notifications` 導入、`lib/notification.ts` をネイティブ/Web分岐に対応 | P0 | 1.0 |
+| T113 | 繰り返し設定（once/daily/weekly）をネイティブAPIのスケジュール形式に変換するロジック | P0 | 1.0 |
+| T114 | スヌーズのネイティブ通知再スケジュール対応 | P0 | 0.5 |
+| T115 | 実機（Androidエミュレータ／実機）でアプリ終了後の通知到達を検証 | P0 | 0.5 |
+| T116 | アプリアイコン・スプラッシュ画面のネイティブ向け生成 | P1 | 0.5 |
+| T117 | Google Play 提出準備（署名鍵、Data Safety記入、ストア掲載情報） | P1 | 1.0 |
+| T118 | iOS版（Capacitor + Xcode）の検討（macOS環境が別途必要） | P2 | – |
+
 ## 合計見積（目安）
 
 P0のみ: 約20人日 ／ P0+P1: 約24人日 ／ 全タスク: 約24.5人日

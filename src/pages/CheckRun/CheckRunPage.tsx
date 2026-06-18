@@ -8,7 +8,7 @@ import { useSetsStore } from "../../store/setsStore";
 import { useSchedulesStore } from "../../store/schedulesStore";
 import { useSettingsStore } from "../../store/settingsStore";
 import { resolveScheduleItems } from "../../lib/dedupe";
-import { scheduleOnce, showNotification } from "../../lib/notification";
+import { scheduleSnooze } from "../../lib/notification";
 import { toDateKey } from "../../lib/recurrence";
 
 export default function CheckRunPage() {
@@ -69,9 +69,7 @@ export default function CheckRunPage() {
   }
 
   const handleSnooze = (minutes: number) => {
-    scheduleOnce(minutes * 60 * 1000, () => {
-      showNotification("デルカク✓ の時間です", "スヌーズしたチェックを再確認しましょう");
-    });
+    scheduleSnooze(minutes);
     setShowSnooze(false);
     navigate("/");
   };

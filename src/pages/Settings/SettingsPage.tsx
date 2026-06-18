@@ -1,8 +1,9 @@
+import { useEffect, useState } from "react";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { useSettingsStore } from "../../store/settingsStore";
-import { getPermissionState, requestPermission } from "../../lib/notification";
-import type { FontSize } from "../../types";
+import { getNotificationPermissionState, requestNotificationPermission } from "../../lib/notification";
+import type { FontSize, NotificationPermissionState } from "../../types";
 
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
   standard: "標準",
@@ -21,9 +22,17 @@ export default function SettingsPage() {
   const defaultSnoozeMinutes = useSettingsStore((s) => s.defaultSnoozeMinutes);
   const notificationPermission = useSettingsStore((s) => s.notificationPermission);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const [currentPermission, setCurrentPermission] = useState<NotificationPermissionState>(
+    notificationPermission,
+  );
+
+  useEffect(() => {
+    getNotificationPermissionState().then(setCurrentPermission);
+  }, []);
 
   const handleRequestPermission = async () => {
-    const result = await requestPermission();
+    const result = await requestNotificationPermission();
+    setCurrentPermission(result);
     updateSettings({ notificationPermission: result });
   };
 
@@ -77,7 +86,7 @@ export default function SettingsPage() {
 
       <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
         <strong>通知の許可状態</strong>
-        <p style={{ margin: 0 }}>{PERMISSION_LABELS[getPermissionState()] ?? "不明"}</p>
+        <p style={{ margin: 0 }}>{PERMISSION_LABELS[currentPermission] ?? "不明"}</p>
         {notificationPermission !== "granted" && (
           <Button onClick={handleRequestPermission}>通知を許可する</Button>
         )}
