@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/Button";
 import { useSettingsStore } from "../../store/settingsStore";
 import { requestNotificationPermission } from "../../lib/notification";
+import { seedDefaultsIfEmpty } from "../../lib/seedDefaults";
 
 const SLIDES = [
   {
@@ -26,6 +27,7 @@ export default function OnboardingPage() {
   const isLast = step === SLIDES.length - 1;
 
   const finish = async () => {
+    seedDefaultsIfEmpty();
     const result = await requestNotificationPermission();
     updateSettings({ onboardingCompleted: true, notificationPermission: result });
     navigate("/");

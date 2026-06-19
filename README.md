@@ -8,7 +8,10 @@
 
 ## ステータス
 
-現在は実装前フェーズ。以下の初回成果物を提出済み。
+PWA版MVP一式の実装が完了し、GitHub Pagesに公開済み（https://koredeii-app.github.io/derukaku/）。
+実機検証で「アプリを閉じた状態での通知」がPWA単体では実現不可能と判明したため、Capacitorによるネイティブ化（Android）の足場を前倒しで構築済み（詳細は[05-mvp-tasks.md 11章](docs/05-mvp-tasks.md#11-capacitorネイティブ化前倒し対応2026-06-19追加)）。
+
+設計ドキュメント:
 
 1. [システム設計書](docs/01-system-design.md)
 2. [画面一覧](docs/02-screens.md)
@@ -18,8 +21,9 @@
 6. [開発スケジュール](docs/06-schedule.md)
 7. [改善提案](docs/07-improvements.md)
 
-## 技術スタック（予定）
+## 技術スタック
 
 React / Vite / PWA（vite-plugin-pwa） / Zustand / localStorage / GitHub Pages
+ネイティブ化: Capacitor（Android。`@capacitor/local-notifications`でアプリ終了後も通知を到達させる）
 
-将来構想: IndexedDB、Capacitorによるネイティブアプリ化（Android／iOS）
+将来構想: IndexedDB、iOS版（Capacitor + Xcode）
