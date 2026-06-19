@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
+import { PageHeader } from "../../components/PageHeader";
 import { useSessionsStore } from "../../store/sessionsStore";
 import { useItemsStore } from "../../store/itemsStore";
 import { useSetsStore } from "../../store/setsStore";
@@ -76,8 +77,7 @@ export default function CheckRunPage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">出発前チェック</h1>
-      <p className="page-subtitle">すべてタップしてチェックしてください</p>
+      <PageHeader title="出発前チェック" subtitle="すべてタップしてチェックしてください" showBack />
 
       <div className="stack" style={{ marginBottom: "var(--space-5)" }}>
         {session.items.map((result) => {
