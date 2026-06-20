@@ -12,6 +12,7 @@ export default function ItemsPage() {
   const addItem = useItemsStore((s) => s.addItem);
   const updateItem = useItemsStore((s) => s.updateItem);
   const removeItem = useItemsStore((s) => s.removeItem);
+  const moveItem = useItemsStore((s) => s.moveItem);
   const removeItemRefFromSets = useSetsStore((s) => s.removeItemReference);
   const removeItemRefFromSchedules = useSchedulesStore((s) => s.removeItemReference);
 
@@ -59,8 +60,28 @@ export default function ItemsPage() {
 
       <div className="stack" style={{ marginBottom: "var(--space-4)" }}>
         {items.length === 0 && <div className="empty-state card">まだ項目がありません</div>}
-        {items.map((item) => (
+        {items.map((item, index) => (
           <div key={item.id} className="list-item">
+            <div className="reorder-buttons">
+              <button
+                type="button"
+                className="reorder-btn"
+                aria-label="上に移動"
+                disabled={index === 0}
+                onClick={() => moveItem(item.id, "up")}
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                className="reorder-btn"
+                aria-label="下に移動"
+                disabled={index === items.length - 1}
+                onClick={() => moveItem(item.id, "down")}
+              >
+                ▼
+              </button>
+            </div>
             <span className="name">{item.name}</span>
             <Button size="sm" variant="secondary" onClick={() => openEdit(item)}>
               編集
