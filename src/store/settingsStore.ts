@@ -11,6 +11,7 @@ const defaultSettings: AppSettings = {
   defaultSnoozeMinutes: 10,
   notificationPermission: "default",
   onboardingCompleted: false,
+  themeColor: "blue",
 };
 
 export const useSettingsStore = create<SettingsState>()(

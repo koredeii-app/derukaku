@@ -8,7 +8,7 @@ interface ItemsState {
   addItem: (name: string, icon?: string) => Item;
   updateItem: (id: string, patch: Partial<Pick<Item, "name" | "icon">>) => void;
   removeItem: (id: string) => void;
-  moveItem: (id: string, direction: "up" | "down") => void;
+  reorderItems: (orderedIds: string[]) => void;
 }
 
 export const useItemsStore = create<ItemsState>()(
@@ -32,13 +32,11 @@ export const useItemsStore = create<ItemsState>()(
       removeItem: (id) => {
         set({ items: get().items.filter((item) => item.id !== id) });
       },
-      moveItem: (id, direction) => {
-        const items = get().items;
-        const index = items.findIndex((item) => item.id === id);
-        const targetIndex = direction === "up" ? index - 1 : index + 1;
-        if (index === -1 || targetIndex < 0 || targetIndex >= items.length) return;
-        const reordered = [...items];
-        [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+      reorderItems: (orderedIds) => {
+        const itemsById = new Map(get().items.map((item) => [item.id, item]));
+        const reordered = orderedIds
+          .map((id) => itemsById.get(id))
+          .filter((item): item is Item => item !== undefined);
         set({ items: reordered });
       },
     }),

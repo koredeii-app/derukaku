@@ -30,3 +30,28 @@ html[data-font-size="large"] {
 html[data-font-size="extra-large"] {
   --font-size-base: 23px;
 }
+
+html[data-theme="blue"] {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+}
+
+html[data-theme="green"] {
+  --color-primary: #16a34a;
+  --color-primary-dark: #15803d;
+}
+
+html[data-theme="purple"] {
+  --color-primary: #7c3aed;
+  --color-primary-dark: #6d28d9;
+}
+
+html[data-theme="orange"] {
+  --color-primary: #ea580c;
+  --color-primary-dark: #c2410c;
+}
+
+html[data-theme="pink"] {
+  --color-primary: #db2777;
+  --color-primary-dark: #be185d;
+}

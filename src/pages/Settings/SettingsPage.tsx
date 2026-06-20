@@ -5,7 +5,7 @@ import { Button } from "../../components/Button";
 import { useSettingsStore } from "../../store/settingsStore";
 import { getNotificationPermissionState, requestNotificationPermission } from "../../lib/notification";
 import { resizeImageFileToDataUrl } from "../../lib/imageResize";
-import type { FontSize, NotificationPermissionState } from "../../types";
+import type { FontSize, NotificationPermissionState, ThemeColor } from "../../types";
 
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
   standard: "標準",
@@ -19,8 +19,19 @@ const PERMISSION_LABELS: Record<string, string> = {
   default: "未設定",
 };
 
+const THEME_COLOR_OPTIONS: { value: ThemeColor; label: string; swatch: string }[] = [
+  { value: "blue", label: "ブルー", swatch: "#2563eb" },
+  { value: "green", label: "グリーン", swatch: "#16a34a" },
+  { value: "purple", label: "パープル", swatch: "#7c3aed" },
+  { value: "orange", label: "オレンジ", swatch: "#ea580c" },
+  { value: "pink", label: "ピンク", swatch: "#db2777" },
+];
+
+const SNOOZE_MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => i + 1);
+
 export default function SettingsPage() {
   const fontSize = useSettingsStore((s) => s.fontSize);
+  const themeColor = useSettingsStore((s) => s.themeColor);
   const defaultSnoozeMinutes = useSettingsStore((s) => s.defaultSnoozeMinutes);
   const notificationPermission = useSettingsStore((s) => s.notificationPermission);
   const homeBackgroundImage = useSettingsStore((s) => s.homeBackgroundImage);
@@ -89,20 +100,38 @@ export default function SettingsPage() {
       </div>
 
       <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
-        <strong>デフォルトのスヌーズ時間</strong>
-        <div className="row">
-          {[5, 10, 15].map((minutes) => (
+        <strong>テーマカラー</strong>
+        <div className="row" style={{ flexWrap: "wrap" }}>
+          {THEME_COLOR_OPTIONS.map((option) => (
             <button
-              key={minutes}
+              key={option.value}
               type="button"
-              className="chip"
-              data-selected={defaultSnoozeMinutes === minutes}
-              onClick={() => updateSettings({ defaultSnoozeMinutes: minutes })}
-            >
-              {minutes}分
-            </button>
+              className="theme-swatch"
+              data-selected={themeColor === option.value}
+              aria-label={option.label}
+              style={{ background: option.swatch }}
+              onClick={() => updateSettings({ themeColor: option.value })}
+            />
           ))}
         </div>
+      </div>
+
+      <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
+        <strong>デフォルトのスヌーズ時間</strong>
+        <label htmlFor="default-snooze-minutes" style={{ display: "none" }}>
+          スヌーズ時間（分）
+        </label>
+        <select
+          id="default-snooze-minutes"
+          value={defaultSnoozeMinutes}
+          onChange={(e) => updateSettings({ defaultSnoozeMinutes: Number(e.target.value) })}
+        >
+          {SNOOZE_MINUTE_OPTIONS.map((minutes) => (
+            <option key={minutes} value={minutes}>
+              {minutes}分
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>

@@ -61,6 +61,7 @@ export interface CheckSession {
 
 export type FontSize = "standard" | "large" | "extra-large";
 export type NotificationPermissionState = "default" | "granted" | "denied";
+export type ThemeColor = "blue" | "green" | "purple" | "orange" | "pink";
 
 export interface AppSettings {
   fontSize: FontSize;
@@ -68,4 +69,5 @@ export interface AppSettings {
   notificationPermission: NotificationPermissionState;
   onboardingCompleted: boolean;
   homeBackgroundImage?: string;
+  themeColor: ThemeColor;
 }

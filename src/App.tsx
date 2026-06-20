@@ -23,6 +23,14 @@ function FontSizeEffect() {
   return null;
 }
 
+function ThemeColorEffect() {
+  const themeColor = useSettingsStore((s) => s.themeColor);
+  useEffect(() => {
+    document.documentElement.dataset.theme = themeColor;
+  }, [themeColor]);
+  return null;
+}
+
 export default function App() {
   const onboardingCompleted = useSettingsStore((s) => s.onboardingCompleted);
   const location = useLocation();
@@ -40,6 +48,7 @@ export default function App() {
   return (
     <>
       <FontSizeEffect />
+      <ThemeColorEffect />
       <Routes>
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/" element={<HomePage />} />
