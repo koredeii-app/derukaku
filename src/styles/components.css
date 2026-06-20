@@ -114,6 +114,9 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   user-select: none;
+  /* a press-and-hold drag starts here, so the browser must never take this
+     gesture over as a native scroll; see ItemsPage's manual scroll fallback */
+  touch-action: none;
 }
 
 .list-item .name {
@@ -125,7 +128,6 @@
 .list-item.dragging {
   position: relative;
   z-index: 10;
-  touch-action: none;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.28);
 }
 

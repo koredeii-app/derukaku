@@ -30,44 +30,17 @@ export default function ItemsPage() {
   const longPressTimer = useRef<number | null>(null);
   const pressStart = useRef<{ x: number; y: number } | null>(null);
   const draggingIdRef = useRef<string | null>(null);
-  const activeRowRef = useRef<HTMLDivElement | null>(null);
+  // rows have touch-action: none (see components.css) so a press-and-hold never
+  // starts a native scroll. While the long-press hasn't fired yet, movement past
+  // MOVE_CANCEL_PX means the user wanted to scroll, not drag, so we scroll
+  // manually with this delta tracker since the browser won't do it for us.
+  const isScrollingRef = useRef(false);
+  const lastScrollYRef = useRef(0);
 
   const clearLongPressTimer = () => {
     if (longPressTimer.current !== null) {
       window.clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
-    }
-  };
-
-  const handleRowPointerDown = (e: ReactPointerEvent<HTMLDivElement>, id: string) => {
-    if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
-    pressStart.current = { x: e.clientX, y: e.clientY };
-    const rowEl = e.currentTarget;
-    const pointerId = e.pointerId;
-    clearLongPressTimer();
-    longPressTimer.current = window.setTimeout(() => {
-      draggingIdRef.current = id;
-      activeRowRef.current = rowEl;
-      // set synchronously so the browser doesn't start a native scroll/pan
-      // (and fire pointercancel) before React re-renders the "dragging" class
-      rowEl.style.touchAction = "none";
-      setDraggingId(id);
-      setDragOffsetY(0);
-      rowEl.setPointerCapture(pointerId);
-    }, LONG_PRESS_MS);
-  };
-
-  const handleRowPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (draggingIdRef.current) {
-      const startY = pressStart.current?.y ?? e.clientY;
-      setDragOffsetY(e.clientY - startY);
-      return;
-    }
-    if (!pressStart.current) return;
-    const dx = Math.abs(e.clientX - pressStart.current.x);
-    const dy = Math.abs(e.clientY - pressStart.current.y);
-    if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
-      clearLongPressTimer();
     }
   };
 
@@ -94,27 +67,62 @@ export default function ItemsPage() {
         reorderItems(next.map((item) => item.id));
       }
     }
-    if (activeRowRef.current) {
-      activeRowRef.current.style.touchAction = "";
-      activeRowRef.current = null;
-    }
     draggingIdRef.current = null;
     setDraggingId(null);
     setDragOffsetY(0);
   };
 
-  const handleRowPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+  const handleRowPointerDown = (e: ReactPointerEvent<HTMLDivElement>, id: string) => {
+    if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+    pressStart.current = { x: e.clientX, y: e.clientY };
+    isScrollingRef.current = false;
+    lastScrollYRef.current = e.clientY;
     clearLongPressTimer();
-    pressStart.current = null;
-    endDrag(e.clientY);
-  };
+    longPressTimer.current = window.setTimeout(() => {
+      draggingIdRef.current = id;
+      setDraggingId(id);
+      setDragOffsetY(0);
+    }, LONG_PRESS_MS);
 
-  // pointercancel coordinates aren't reliable (often (0,0)), so abort
-  // the drag without committing a reorder instead of treating it as a drop
-  const handleRowPointerCancel = () => {
-    clearLongPressTimer();
-    pressStart.current = null;
-    endDrag(null);
+    const handleMove = (ev: PointerEvent) => {
+      if (draggingIdRef.current) {
+        const startY = pressStart.current?.y ?? ev.clientY;
+        setDragOffsetY(ev.clientY - startY);
+        return;
+      }
+      if (isScrollingRef.current) {
+        window.scrollBy(0, lastScrollYRef.current - ev.clientY);
+        lastScrollYRef.current = ev.clientY;
+        return;
+      }
+      if (!pressStart.current) return;
+      const dx = Math.abs(ev.clientX - pressStart.current.x);
+      const dy = Math.abs(ev.clientY - pressStart.current.y);
+      if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
+        clearLongPressTimer();
+        isScrollingRef.current = true;
+        lastScrollYRef.current = ev.clientY;
+      }
+    };
+
+    const finish = (pointerY: number | null) => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleCancel);
+      clearLongPressTimer();
+      pressStart.current = null;
+      isScrollingRef.current = false;
+      endDrag(pointerY);
+    };
+
+    const handleUp = (ev: PointerEvent) => finish(ev.clientY);
+    // pointercancel coordinates aren't reliable (often (0,0)), so abort
+    // the drag without committing a reorder instead of treating it as a drop
+    const handleCancel = () => finish(null);
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleCancel);
   };
 
   const openCreate = () => {
@@ -171,9 +179,6 @@ export default function ItemsPage() {
                 : undefined
             }
             onPointerDown={(e) => handleRowPointerDown(e, item.id)}
-            onPointerMove={handleRowPointerMove}
-            onPointerUp={handleRowPointerUp}
-            onPointerCancel={handleRowPointerCancel}
           >
             <span className="name">{item.name}</span>
             <Button
