@@ -54,7 +54,7 @@ export default function HomePage() {
       )}
 
       <div className="stack" style={{ marginBottom: "var(--space-5)" }}>
-        <h2 style={{ fontSize: "1.1rem" }}>今日の予定</h2>
+        <h2 className="page-section-title" style={{ fontSize: "1.1rem" }}>今日の予定</h2>
         {todaySchedules.length === 0 && (
           <div className="empty-state card">本日の予定はありません</div>
         )}
