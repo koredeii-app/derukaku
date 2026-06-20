@@ -5,6 +5,7 @@ import { useSchedulesStore } from "../../store/schedulesStore";
 import { useSetsStore } from "../../store/setsStore";
 import { useItemsStore } from "../../store/itemsStore";
 import { useSessionsStore } from "../../store/sessionsStore";
+import { useSettingsStore } from "../../store/settingsStore";
 import { matchesDate, toDateKey } from "../../lib/recurrence";
 import { resolveScheduleItems } from "../../lib/dedupe";
 
@@ -15,6 +16,7 @@ export default function HomePage() {
   const items = useItemsStore((s) => s.items);
   const sessions = useSessionsStore((s) => s.sessions);
   const startSession = useSessionsStore((s) => s.startSession);
+  const homeBackgroundImage = useSettingsStore((s) => s.homeBackgroundImage);
 
   const today = useMemo(() => new Date(), []);
   const todayKey = toDateKey(today);
@@ -35,7 +37,10 @@ export default function HomePage() {
   };
 
   return (
-    <div className="page">
+    <div
+      className={`page${homeBackgroundImage ? " page-bg-image" : ""}`}
+      style={homeBackgroundImage ? { backgroundImage: `url(${homeBackgroundImage})` } : undefined}
+    >
       <h1 className="page-title">デルカク✓</h1>
       <p className="page-subtitle">出発前の忘れ物チェック</p>
 

@@ -67,4 +67,5 @@ export interface AppSettings {
   defaultSnoozeMinutes: number;
   notificationPermission: NotificationPermissionState;
   onboardingCompleted: boolean;
+  homeBackgroundImage?: string;
 }

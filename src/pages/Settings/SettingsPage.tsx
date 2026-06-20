@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { useSettingsStore } from "../../store/settingsStore";
 import { getNotificationPermissionState, requestNotificationPermission } from "../../lib/notification";
+import { resizeImageFileToDataUrl } from "../../lib/imageResize";
 import type { FontSize, NotificationPermissionState } from "../../types";
 
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
@@ -21,10 +23,12 @@ export default function SettingsPage() {
   const fontSize = useSettingsStore((s) => s.fontSize);
   const defaultSnoozeMinutes = useSettingsStore((s) => s.defaultSnoozeMinutes);
   const notificationPermission = useSettingsStore((s) => s.notificationPermission);
+  const homeBackgroundImage = useSettingsStore((s) => s.homeBackgroundImage);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const [currentPermission, setCurrentPermission] = useState<NotificationPermissionState>(
     notificationPermission,
   );
+  const [backgroundError, setBackgroundError] = useState<string | null>(null);
 
   useEffect(() => {
     getNotificationPermissionState().then(setCurrentPermission);
@@ -34,6 +38,23 @@ export default function SettingsPage() {
     const result = await requestNotificationPermission();
     setCurrentPermission(result);
     updateSettings({ notificationPermission: result });
+  };
+
+  const handleBackgroundChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setBackgroundError("画像ファイルを選択してください");
+      return;
+    }
+    try {
+      const dataUrl = await resizeImageFileToDataUrl(file);
+      updateSettings({ homeBackgroundImage: dataUrl });
+      setBackgroundError(null);
+    } catch {
+      setBackgroundError("画像の設定に失敗しました。別の画像でお試しください。");
+    }
   };
 
   const handleReset = () => {
@@ -82,6 +103,40 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
+        <strong>ホーム画面の背景</strong>
+        {homeBackgroundImage && (
+          <img
+            src={homeBackgroundImage}
+            alt="ホーム画面の背景プレビュー"
+            style={{
+              width: "100%",
+              maxHeight: 160,
+              objectFit: "cover",
+              borderRadius: "var(--radius-md)",
+            }}
+          />
+        )}
+        <label htmlFor="home-background-input" className="btn btn-secondary" style={{ textAlign: "center" }}>
+          画像を選択
+        </label>
+        <input
+          id="home-background-input"
+          type="file"
+          accept="image/*"
+          onChange={handleBackgroundChange}
+          style={{ display: "none" }}
+        />
+        {backgroundError && (
+          <p style={{ margin: 0, color: "var(--color-danger)" }}>{backgroundError}</p>
+        )}
+        {homeBackgroundImage && (
+          <Button variant="ghost" onClick={() => updateSettings({ homeBackgroundImage: undefined })}>
+            背景を削除
+          </Button>
+        )}
       </div>
 
       <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>

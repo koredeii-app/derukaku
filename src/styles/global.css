@@ -70,3 +70,23 @@ a {
 .spacer {
   flex: 1;
 }
+
+.page-bg-image {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.page-bg-image::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 0;
+}
+
+.page-bg-image > * {
+  position: relative;
+  z-index: 1;
+}
