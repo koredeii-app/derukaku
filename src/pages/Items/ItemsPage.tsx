@@ -24,44 +24,18 @@ export default function ItemsPage() {
   const LONG_PRESS_MS = 350;
   const MOVE_CANCEL_PX = 8;
 
-  const [dragOrder, setDragOrder] = useState<Item[] | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOffsetY, setDragOffsetY] = useState(0);
   const itemRefs = useRef(new Map<string, HTMLDivElement>());
   const longPressTimer = useRef<number | null>(null);
   const pressStart = useRef<{ x: number; y: number } | null>(null);
   const draggingIdRef = useRef<string | null>(null);
-  const displayItems = dragOrder ?? items;
 
   const clearLongPressTimer = () => {
     if (longPressTimer.current !== null) {
       window.clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-  };
-
-  const moveDragTo = (pointerY: number) => {
-    const draggingItemId = draggingIdRef.current;
-    if (!draggingItemId) return;
-    setDragOrder((current) => {
-      if (!current) return current;
-      const currentIndex = current.findIndex((item) => item.id === draggingItemId);
-      if (currentIndex === -1) return current;
-      let targetIndex = current.length - 1;
-      for (let i = 0; i < current.length; i++) {
-        const el = itemRefs.current.get(current[i].id);
-        if (!el) continue;
-        const rect = el.getBoundingClientRect();
-        if (pointerY < rect.top + rect.height / 2) {
-          targetIndex = i;
-          break;
-        }
-      }
-      if (targetIndex === currentIndex) return current;
-      const next = [...current];
-      const [moved] = next.splice(currentIndex, 1);
-      next.splice(targetIndex, 0, moved);
-      return next;
-    });
   };
 
   const handleRowPointerDown = (e: ReactPointerEvent<HTMLDivElement>, id: string) => {
@@ -72,15 +46,16 @@ export default function ItemsPage() {
     clearLongPressTimer();
     longPressTimer.current = window.setTimeout(() => {
       draggingIdRef.current = id;
-      setDragOrder(items);
       setDraggingId(id);
+      setDragOffsetY(0);
       rowEl.setPointerCapture(pointerId);
     }, LONG_PRESS_MS);
   };
 
   const handleRowPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (draggingIdRef.current) {
-      moveDragTo(e.clientY);
+      const startY = pressStart.current?.y ?? e.clientY;
+      setDragOffsetY(e.clientY - startY);
       return;
     }
     if (!pressStart.current) return;
@@ -91,17 +66,35 @@ export default function ItemsPage() {
     }
   };
 
-  const handleRowPointerUp = () => {
+  const handleRowPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     clearLongPressTimer();
     pressStart.current = null;
-    if (draggingIdRef.current) {
-      setDragOrder((current) => {
-        if (current) reorderItems(current.map((item) => item.id));
-        return null;
-      });
-      draggingIdRef.current = null;
-      setDraggingId(null);
+    const id = draggingIdRef.current;
+    if (id) {
+      const pointerY = e.clientY;
+      const currentIndex = items.findIndex((item) => item.id === id);
+      let targetIndex = items.length - 1;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].id === id) continue;
+        const el = itemRefs.current.get(items[i].id);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (pointerY < rect.top + rect.height / 2) {
+          targetIndex = i;
+          break;
+        }
+      }
+      if (currentIndex !== -1 && targetIndex !== currentIndex) {
+        const next = [...items];
+        const [moved] = next.splice(currentIndex, 1);
+        const adjustedTarget = targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+        next.splice(adjustedTarget, 0, moved);
+        reorderItems(next.map((item) => item.id));
+      }
     }
+    draggingIdRef.current = null;
+    setDraggingId(null);
+    setDragOffsetY(0);
   };
 
   const openCreate = () => {
@@ -144,7 +137,7 @@ export default function ItemsPage() {
 
       <div className="stack" style={{ marginBottom: "var(--space-4)" }}>
         {items.length === 0 && <div className="empty-state card">まだ項目がありません</div>}
-        {displayItems.map((item) => (
+        {items.map((item) => (
           <div
             key={item.id}
             ref={(el) => {
@@ -152,6 +145,11 @@ export default function ItemsPage() {
               else itemRefs.current.delete(item.id);
             }}
             className={`list-item${draggingId === item.id ? " dragging" : ""}`}
+            style={
+              draggingId === item.id
+                ? { transform: `translateY(${dragOffsetY}px) scale(1.02)` }
+                : undefined
+            }
             onPointerDown={(e) => handleRowPointerDown(e, item.id)}
             onPointerMove={handleRowPointerMove}
             onPointerUp={handleRowPointerUp}
