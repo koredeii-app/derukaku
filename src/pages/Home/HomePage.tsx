@@ -119,14 +119,6 @@ export default function HomePage() {
           );
         })}
       </div>
-
-      <Button
-        variant="secondary"
-        onClick={() => handleStart(undefined, items.map((i) => i.id))}
-        disabled={items.length === 0}
-      >
-        今すぐチェックを始める（全項目）
-      </Button>
     </div>
   );
 }
