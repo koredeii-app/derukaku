@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 
 const navItems = [
-  { to: "/", label: "ホーム", icon: "🏠" },
+  { to: "/", label: "今日の予定", icon: "🏠" },
   { to: "/calendar", label: "カレンダー", icon: "📅" },
   { to: "/sets", label: "セット", icon: "🧳" },
   { to: "/items", label: "項目", icon: "📝" },

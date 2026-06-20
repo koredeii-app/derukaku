@@ -235,3 +235,22 @@ label {
   color: var(--color-text-muted);
   padding: var(--space-6) var(--space-4);
 }
+
+.schedule-chip-done {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 80%;
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: 999px;
+  background: var(--color-success);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
