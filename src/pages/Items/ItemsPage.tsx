@@ -21,24 +21,30 @@ export default function ItemsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [name, setName] = useState("");
 
+  const LONG_PRESS_MS = 350;
+  const MOVE_CANCEL_PX = 8;
+
   const [dragOrder, setDragOrder] = useState<Item[] | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const itemRefs = useRef(new Map<string, HTMLDivElement>());
+  const longPressTimer = useRef<number | null>(null);
+  const pressStart = useRef<{ x: number; y: number } | null>(null);
+  const draggingIdRef = useRef<string | null>(null);
   const displayItems = dragOrder ?? items;
 
-  const handleDragStart = (e: ReactPointerEvent<HTMLButtonElement>, id: string) => {
-    e.preventDefault();
-    setDragOrder(items);
-    setDraggingId(id);
-    e.currentTarget.setPointerCapture(e.pointerId);
+  const clearLongPressTimer = () => {
+    if (longPressTimer.current !== null) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
-  const handleDragMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
-    if (!draggingId) return;
-    const pointerY = e.clientY;
+  const moveDragTo = (pointerY: number) => {
+    const draggingItemId = draggingIdRef.current;
+    if (!draggingItemId) return;
     setDragOrder((current) => {
       if (!current) return current;
-      const currentIndex = current.findIndex((item) => item.id === draggingId);
+      const currentIndex = current.findIndex((item) => item.id === draggingItemId);
       if (currentIndex === -1) return current;
       let targetIndex = current.length - 1;
       for (let i = 0; i < current.length; i++) {
@@ -58,12 +64,44 @@ export default function ItemsPage() {
     });
   };
 
-  const handleDragEnd = () => {
-    if (dragOrder) {
-      reorderItems(dragOrder.map((item) => item.id));
+  const handleRowPointerDown = (e: ReactPointerEvent<HTMLDivElement>, id: string) => {
+    if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+    pressStart.current = { x: e.clientX, y: e.clientY };
+    const rowEl = e.currentTarget;
+    const pointerId = e.pointerId;
+    clearLongPressTimer();
+    longPressTimer.current = window.setTimeout(() => {
+      draggingIdRef.current = id;
+      setDragOrder(items);
+      setDraggingId(id);
+      rowEl.setPointerCapture(pointerId);
+    }, LONG_PRESS_MS);
+  };
+
+  const handleRowPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (draggingIdRef.current) {
+      moveDragTo(e.clientY);
+      return;
     }
-    setDraggingId(null);
-    setDragOrder(null);
+    if (!pressStart.current) return;
+    const dx = Math.abs(e.clientX - pressStart.current.x);
+    const dy = Math.abs(e.clientY - pressStart.current.y);
+    if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
+      clearLongPressTimer();
+    }
+  };
+
+  const handleRowPointerUp = () => {
+    clearLongPressTimer();
+    pressStart.current = null;
+    if (draggingIdRef.current) {
+      setDragOrder((current) => {
+        if (current) reorderItems(current.map((item) => item.id));
+        return null;
+      });
+      draggingIdRef.current = null;
+      setDraggingId(null);
+    }
   };
 
   const openCreate = () => {
@@ -114,20 +152,18 @@ export default function ItemsPage() {
               else itemRefs.current.delete(item.id);
             }}
             className={`list-item${draggingId === item.id ? " dragging" : ""}`}
+            onPointerDown={(e) => handleRowPointerDown(e, item.id)}
+            onPointerMove={handleRowPointerMove}
+            onPointerUp={handleRowPointerUp}
+            onPointerCancel={handleRowPointerUp}
           >
-            <button
-              type="button"
-              className="drag-handle"
-              aria-label="ドラッグして並び替え"
-              onPointerDown={(e) => handleDragStart(e, item.id)}
-              onPointerMove={handleDragMove}
-              onPointerUp={handleDragEnd}
-              onPointerCancel={handleDragEnd}
-            >
-              ⠿
-            </button>
             <span className="name">{item.name}</span>
-            <Button size="sm" variant="secondary" onClick={() => openEdit(item)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              data-no-drag
+              onClick={() => openEdit(item)}
+            >
               編集
             </Button>
           </div>
