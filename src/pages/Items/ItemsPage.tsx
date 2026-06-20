@@ -30,6 +30,7 @@ export default function ItemsPage() {
   const longPressTimer = useRef<number | null>(null);
   const pressStart = useRef<{ x: number; y: number } | null>(null);
   const draggingIdRef = useRef<string | null>(null);
+  const activeRowRef = useRef<HTMLDivElement | null>(null);
 
   const clearLongPressTimer = () => {
     if (longPressTimer.current !== null) {
@@ -46,6 +47,10 @@ export default function ItemsPage() {
     clearLongPressTimer();
     longPressTimer.current = window.setTimeout(() => {
       draggingIdRef.current = id;
+      activeRowRef.current = rowEl;
+      // set synchronously so the browser doesn't start a native scroll/pan
+      // (and fire pointercancel) before React re-renders the "dragging" class
+      rowEl.style.touchAction = "none";
       setDraggingId(id);
       setDragOffsetY(0);
       rowEl.setPointerCapture(pointerId);
@@ -66,12 +71,9 @@ export default function ItemsPage() {
     }
   };
 
-  const handleRowPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    clearLongPressTimer();
-    pressStart.current = null;
+  const endDrag = (pointerY: number | null) => {
     const id = draggingIdRef.current;
-    if (id) {
-      const pointerY = e.clientY;
+    if (id && pointerY !== null) {
       const currentIndex = items.findIndex((item) => item.id === id);
       let targetIndex = items.length - 1;
       for (let i = 0; i < items.length; i++) {
@@ -92,9 +94,27 @@ export default function ItemsPage() {
         reorderItems(next.map((item) => item.id));
       }
     }
+    if (activeRowRef.current) {
+      activeRowRef.current.style.touchAction = "";
+      activeRowRef.current = null;
+    }
     draggingIdRef.current = null;
     setDraggingId(null);
     setDragOffsetY(0);
+  };
+
+  const handleRowPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    clearLongPressTimer();
+    pressStart.current = null;
+    endDrag(e.clientY);
+  };
+
+  // pointercancel coordinates aren't reliable (often (0,0)), so abort
+  // the drag without committing a reorder instead of treating it as a drop
+  const handleRowPointerCancel = () => {
+    clearLongPressTimer();
+    pressStart.current = null;
+    endDrag(null);
   };
 
   const openCreate = () => {
@@ -153,7 +173,7 @@ export default function ItemsPage() {
             onPointerDown={(e) => handleRowPointerDown(e, item.id)}
             onPointerMove={handleRowPointerMove}
             onPointerUp={handleRowPointerUp}
-            onPointerCancel={handleRowPointerUp}
+            onPointerCancel={handleRowPointerCancel}
           >
             <span className="name">{item.name}</span>
             <Button
