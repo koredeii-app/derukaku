@@ -9,7 +9,6 @@ import { toDateKey } from "../../lib/recurrence";
 import type { RecurrenceType } from "../../types";
 
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
-const SNOOZE_OPTIONS = [5, 10, 15];
 
 export default function ScheduleEditPage() {
   const navigate = useNavigate();
@@ -31,8 +30,6 @@ export default function ScheduleEditPage() {
   );
   const [date, setDate] = useState(existing?.recurrence.date ?? presetDate);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(existing?.recurrence.daysOfWeek ?? []);
-  const [time, setTime] = useState(existing?.notification.time ?? "07:30");
-  const [notifyEnabled, setNotifyEnabled] = useState(existing?.notification.enabled ?? true);
   const [setIds, setSetIds] = useState<string[]>(existing?.setIds ?? []);
   const [itemIds, setItemIds] = useState<string[]>(existing?.itemIds ?? []);
 
@@ -59,7 +56,6 @@ export default function ScheduleEditPage() {
             : { type: "daily" as const },
       setIds,
       itemIds,
-      notification: { enabled: notifyEnabled, time, snoozeOptions: SNOOZE_OPTIONS },
     };
     if (existing) {
       updateSchedule(existing.id, payload);
@@ -130,25 +126,7 @@ export default function ScheduleEditPage() {
       )}
 
       <div className="stack" style={{ marginBottom: "var(--space-4)" }}>
-        <label htmlFor="schedule-time">通知時刻</label>
-        <input
-          id="schedule-time"
-          type="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-        />
-        <button
-          type="button"
-          className="chip"
-          data-selected={notifyEnabled}
-          onClick={() => setNotifyEnabled((prev) => !prev)}
-        >
-          通知{notifyEnabled ? "ON" : "OFF"}
-        </button>
-      </div>
-
-      <div className="stack" style={{ marginBottom: "var(--space-4)" }}>
-        <label>セット</label>
+        <label>この日に追加するセット</label>
         {sets.length === 0 && <div className="empty-state card">セットがまだありません</div>}
         <div className="row" style={{ flexWrap: "wrap" }}>
           {sets.map((set) => (

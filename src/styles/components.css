@@ -236,6 +236,66 @@ label {
   padding: var(--space-6) var(--space-4);
 }
 
+.swipe-row {
+  position: relative;
+  touch-action: pan-y;
+}
+
+.swipe-row-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-danger);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.swipe-row .check-row {
+  position: relative;
+}
+
+.toast-stack {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 440px;
+  width: calc(100% - var(--space-5) * 2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-text);
+  color: #ffffff;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+}
+
+.toast button {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .schedule-chip-done {
   align-self: flex-end;
   display: inline-flex;

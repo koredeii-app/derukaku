@@ -1,10 +1,9 @@
 import { Capacitor } from "@capacitor/core";
-import type { NotificationPermissionState, Recurrence } from "../types";
-import { matchesDate } from "./recurrence";
+import type { NotificationMode, NotificationPermissionState } from "../types";
 import {
   getNativePermissionState,
   requestNativePermission,
-  scheduleNativeSnooze,
+  syncStandingNativeNotification,
 } from "./nativeNotifications";
 
 /** ネイティブ(Capacitor)とWebのどちらで動いていても、適切な方式で通知許可状態を取得する */
@@ -42,6 +41,18 @@ export function showNotification(title: string, body: string): void {
   };
 }
 
+/** 通知モードと曜日設定から、その日に通知すべきかどうかを判定する(0=日〜6=土) */
+export function shouldFireToday(
+  mode: NotificationMode,
+  customDays: number[],
+  date: Date,
+): boolean {
+  const day = date.getDay();
+  if (mode === "daily") return true;
+  if (mode === "auto") return day >= 1 && day <= 5;
+  return customDays.includes(day);
+}
+
 /**
  * 指定時刻(HH:mm)に毎日 onFire を呼び出すタイマーを仕込む。
  * ブラウザの制約により、アプリ（タブ）が開いている間のみ確実に動作する。
@@ -72,42 +83,26 @@ export function scheduleDaily(time: string, onFire: () => void): () => void {
   };
 }
 
-export function scheduleOnce(delayMs: number, onFire: () => void): () => void {
-  const timeoutId = setTimeout(onFire, delayMs);
-  return () => clearTimeout(timeoutId);
-}
-
-/** スヌーズ通知を仕込む。ネイティブ実行時はアプリを閉じていても発火する。 */
-export async function scheduleSnooze(minutes: number): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    await scheduleNativeSnooze(minutes);
-    return;
-  }
-  scheduleOnce(minutes * 60 * 1000, () => {
-    showNotification("デルカク✓ の時間です", "スヌーズしたチェックを再確認しましょう");
-  });
-}
-
 /**
- * 予定の繰り返し設定に応じて通知タイマーを仕込む。
- * - once: 指定日時の一度だけ（過去の日時なら仕込まない）
- * - daily / weekly: 毎日チェックし、recurrence に合致する日だけ fire する
+ * アプリ全体で1つだけ持つ「今日の確認をしてください」通知をスケジュールする。
+ * - 自動: 平日のみ / 毎日: 毎日 / カスタム: 指定した曜日のみ
  */
-export function scheduleNotificationForRecurrence(
-  recurrence: Recurrence,
+export function scheduleStandingNotification(
+  mode: NotificationMode,
   time: string,
+  customDays: number[],
   onFire: () => void,
 ): () => void {
-  if (recurrence.type === "once") {
-    if (!recurrence.date) return () => {};
-    const [hour, minute] = time.split(":").map(Number);
-    const [year, month, day] = recurrence.date.split("-").map(Number);
-    const target = new Date(year, month - 1, day, hour, minute, 0, 0);
-    const delay = target.getTime() - Date.now();
-    if (delay <= 0) return () => {};
-    return scheduleOnce(delay, onFire);
-  }
   return scheduleDaily(time, () => {
-    if (matchesDate(recurrence, new Date())) onFire();
+    if (shouldFireToday(mode, customDays, new Date())) onFire();
   });
+}
+
+/** ネイティブ実行時、通知設定に応じてOS側の通知をすべて再スケジュールする */
+export async function syncNativeStandingNotification(
+  mode: NotificationMode,
+  time: string,
+  customDays: number[],
+): Promise<void> {
+  await syncStandingNativeNotification(mode, time, customDays);
 }

@@ -1,13 +1,12 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { NotificationConfig, Recurrence, ScheduleEntry } from "../types";
+import type { Recurrence, ScheduleEntry } from "../types";
 import { uuid } from "../lib/uuid";
 
 type NewSchedule = {
   recurrence: Recurrence;
   setIds: string[];
   itemIds: string[];
-  notification: NotificationConfig;
 };
 
 interface SchedulesState {
@@ -16,7 +15,6 @@ interface SchedulesState {
   updateSchedule: (id: string, patch: Partial<NewSchedule>) => void;
   removeSchedule: (id: string) => void;
   removeSetReference: (setId: string) => void;
-  removeItemReference: (itemId: string) => void;
 }
 
 export const useSchedulesStore = create<SchedulesState>()(
@@ -46,16 +44,6 @@ export const useSchedulesStore = create<SchedulesState>()(
           schedules: get().schedules.map((s) =>
             s.setIds.includes(setId)
               ? { ...s, setIds: s.setIds.filter((id) => id !== setId), updatedAt: now }
-              : s,
-          ),
-        });
-      },
-      removeItemReference: (itemId) => {
-        const now = new Date().toISOString();
-        set({
-          schedules: get().schedules.map((s) =>
-            s.itemIds.includes(itemId)
-              ? { ...s, itemIds: s.itemIds.filter((id) => id !== itemId), updatedAt: now }
               : s,
           ),
         });

@@ -1,124 +1,99 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "../../components/Button";
+import { useEffect, useMemo, useState } from "react";
+import { CheckRow } from "../../components/CheckRow";
+import { ToastStack } from "../../components/Toast";
+import type { ToastItem } from "../../components/Toast";
 import { useSchedulesStore } from "../../store/schedulesStore";
 import { useSetsStore } from "../../store/setsStore";
 import { useItemsStore } from "../../store/itemsStore";
 import { useSessionsStore } from "../../store/sessionsStore";
 import { useSettingsStore } from "../../store/settingsStore";
-import { matchesDate, toDateKey } from "../../lib/recurrence";
-import { resolveScheduleItems } from "../../lib/dedupe";
+import { toDateKey } from "../../lib/recurrence";
+import { resolveTodayItems } from "../../lib/dedupe";
+import { uuid } from "../../lib/uuid";
 
 export default function HomePage() {
-  const navigate = useNavigate();
   const schedules = useSchedulesStore((s) => s.schedules);
   const sets = useSetsStore((s) => s.sets);
+  const updateSet = useSetsStore((s) => s.updateSet);
   const items = useItemsStore((s) => s.items);
   const sessions = useSessionsStore((s) => s.sessions);
-  const startSession = useSessionsStore((s) => s.startSession);
+  const ensureTodaySession = useSessionsStore((s) => s.ensureTodaySession);
+  const toggleItem = useSessionsStore((s) => s.toggleItem);
   const homeBackgroundImage = useSettingsStore((s) => s.homeBackgroundImage);
 
   const today = useMemo(() => new Date(), []);
   const todayKey = toDateKey(today);
 
-  const todaySchedules = useMemo(
-    () => schedules.filter((s) => matchesDate(s.recurrence, today)),
-    [schedules, today],
+  const todayItems = useMemo(
+    () => resolveTodayItems(schedules, sets, items, today),
+    [schedules, sets, items, today],
+  );
+  const todayItemIds = useMemo(() => todayItems.map((t) => t.item.id), [todayItems]);
+
+  useEffect(() => {
+    ensureTodaySession(todayItemIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todayItemIds.join(",")]);
+
+  const session = sessions.find((s) => s.targetDate === todayKey);
+  const checkedById = useMemo(
+    () => new Map(session?.items.map((r) => [r.itemId, r.checked]) ?? []),
+    [session],
   );
 
-  const inProgressSession = sessions.find(
-    (s) => s.targetDate === todayKey && s.status === "in_progress",
-  );
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const dismissToast = (id: string) => setToasts((prev) => prev.filter((t) => t.id !== id));
 
-  const todayCompletedScheduleIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const session of sessions) {
-      if (session.targetDate === todayKey && session.status === "completed" && session.scheduleEntryId) {
-        ids.add(session.scheduleEntryId);
-      }
-    }
-    return ids;
-  }, [sessions, todayKey]);
-
-  const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(new Set());
-
-  const toggleExpanded = (scheduleId: string) => {
-    setExpandedScheduleIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(scheduleId)) next.delete(scheduleId);
-      else next.add(scheduleId);
-      return next;
+  const handleSwipeExclude = (itemId: string, itemName: string, setIds: string[]) => {
+    setIds.forEach((setId) => {
+      const itemSet = sets.find((s) => s.id === setId);
+      if (!itemSet) return;
+      updateSet(setId, { itemIds: itemSet.itemIds.filter((id) => id !== itemId) });
+      setToasts((prev) => [
+        ...prev,
+        {
+          id: uuid(),
+          message: `「${itemName}」を${itemSet.name}から除外しました`,
+          onUndo: () => {
+            const current = useSetsStore.getState().sets.find((s) => s.id === setId);
+            if (!current || current.itemIds.includes(itemId)) return;
+            updateSet(setId, { itemIds: [...current.itemIds, itemId] });
+          },
+        },
+      ]);
     });
   };
 
-  const handleStart = (scheduleId: string | undefined, resolvedItemIds: string[]) => {
-    if (resolvedItemIds.length === 0) return;
-    const session = startSession(resolvedItemIds, scheduleId);
-    navigate(`/check/session/${session.id}`);
-  };
+  const allChecked = todayItems.length > 0 && todayItems.every((t) => checkedById.get(t.item.id));
 
   return (
     <div
       className={`page${homeBackgroundImage ? " page-bg-image" : ""}`}
       style={homeBackgroundImage ? { backgroundImage: `url(${homeBackgroundImage})` } : undefined}
     >
-      <h1 className="page-title">今日の予定</h1>
-      <p className="page-subtitle">出発前の忘れ物チェック</p>
-
-      {inProgressSession && (
-        <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
-          <strong>本日の未完了チェックがあります</strong>
-          <Button onClick={() => navigate(`/check/session/${inProgressSession.id}`)}>
-            続きを確認する
-          </Button>
-        </div>
-      )}
+      <h1 className="page-title">今日の確認</h1>
 
       <div className="stack" style={{ marginBottom: "var(--space-5)" }}>
-        {todaySchedules.length === 0 && (
-          <div className="empty-state card">本日の予定はありません</div>
+        {todayItems.length === 0 && (
+          <div className="empty-state card">今日の確認項目はありません</div>
         )}
-        {todaySchedules.map((schedule) => {
-          const resolved = resolveScheduleItems(schedule, sets, items);
-          const label = resolved.map((i) => i.name).join(" / ") || "項目未設定";
-          const isCompleted = todayCompletedScheduleIds.has(schedule.id);
-          const isExpanded = expandedScheduleIds.has(schedule.id);
-
-          if (isCompleted && !isExpanded) {
-            return (
-              <button
-                key={schedule.id}
-                type="button"
-                className="schedule-chip-done"
-                onClick={() => toggleExpanded(schedule.id)}
-              >
-                ✓ {label}
-              </button>
-            );
-          }
-
-          return (
-            <div key={schedule.id} className="card stack">
-              <div className="row">
-                <strong>{label}</strong>
-                <span className="spacer" />
-                <span style={{ color: "var(--color-text-muted)" }}>
-                  {schedule.notification.time}
-                </span>
-              </div>
-              {isCompleted ? (
-                <Button variant="ghost" onClick={() => toggleExpanded(schedule.id)}>
-                  ✓ チェック済み（タップで折りたたむ）
-                </Button>
-              ) : (
-                <Button onClick={() => handleStart(schedule.id, resolved.map((i) => i.id))}>
-                  チェック開始
-                </Button>
-              )}
-            </div>
-          );
-        })}
+        {todayItems.map(({ item, setIds }) => (
+          <CheckRow
+            key={item.id}
+            label={item.name}
+            icon={item.icon}
+            checked={checkedById.get(item.id) ?? false}
+            onToggle={() => session && toggleItem(session.id, item.id)}
+            onSwipeExclude={
+              setIds.length > 0 ? () => handleSwipeExclude(item.id, item.name, setIds) : undefined
+            }
+          />
+        ))}
       </div>
+
+      {allChecked && <p className="page-subtitle">確認完了</p>}
+
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

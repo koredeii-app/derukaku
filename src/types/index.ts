@@ -25,18 +25,11 @@ export interface Recurrence {
   daysOfWeek?: number[];
 }
 
-export interface NotificationConfig {
-  enabled: boolean;
-  time: string;
-  snoozeOptions: number[];
-}
-
 export interface ScheduleEntry {
   id: string;
   recurrence: Recurrence;
   setIds: string[];
   itemIds: string[];
-  notification: NotificationConfig;
   createdAt: ISODateTimeString;
   updatedAt: ISODateTimeString;
 }
@@ -51,7 +44,6 @@ export type CheckSessionStatus = "in_progress" | "completed" | "abandoned";
 
 export interface CheckSession {
   id: string;
-  scheduleEntryId?: string;
   targetDate: ISODateString;
   items: CheckSessionItemResult[];
   startedAt: ISODateTimeString;
@@ -62,11 +54,14 @@ export interface CheckSession {
 export type FontSize = "standard" | "large" | "extra-large";
 export type NotificationPermissionState = "default" | "granted" | "denied";
 export type ThemeColor = "blue" | "green" | "purple" | "orange" | "pink";
+export type NotificationMode = "auto" | "daily" | "custom";
 
 export interface AppSettings {
   fontSize: FontSize;
-  defaultSnoozeMinutes: number;
   notificationPermission: NotificationPermissionState;
+  notificationMode: NotificationMode;
+  notificationTime: string;
+  notificationCustomDays: number[];
   onboardingCompleted: boolean;
   homeBackgroundImage?: string;
   themeColor: ThemeColor;

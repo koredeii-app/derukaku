@@ -15,13 +15,23 @@ export default function SetEditPage() {
   const removeSet = useSetsStore((s) => s.removeSet);
   const removeSetRefFromSchedules = useSchedulesStore((s) => s.removeSetReference);
   const items = useItemsStore((s) => s.items);
+  const addItem = useItemsStore((s) => s.addItem);
 
   const existing = setId ? sets.find((s) => s.id === setId) : undefined;
   const [name, setName] = useState(existing?.name ?? "");
   const [selectedIds, setSelectedIds] = useState<string[]>(existing?.itemIds ?? []);
+  const [newItemName, setNewItemName] = useState("");
 
   const toggleItem = (id: string) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+  };
+
+  const createItem = () => {
+    const trimmed = newItemName.trim();
+    if (!trimmed) return;
+    const item = addItem(trimmed);
+    setSelectedIds((prev) => [...prev, item.id]);
+    setNewItemName("");
   };
 
   const save = () => {
@@ -59,9 +69,7 @@ export default function SetEditPage() {
 
       <div className="stack" style={{ marginBottom: "var(--space-5)" }}>
         <label>含める項目</label>
-        {items.length === 0 && (
-          <div className="empty-state card">先に「項目」からチェック項目を登録してください</div>
-        )}
+        {items.length === 0 && <div className="empty-state card">まだ項目がありません</div>}
         <div className="row" style={{ flexWrap: "wrap" }}>
           {items.map((item) => (
             <button
@@ -74,6 +82,22 @@ export default function SetEditPage() {
               {item.name}
             </button>
           ))}
+        </div>
+
+        <div className="row">
+          <input
+            type="text"
+            style={{ flex: 1 }}
+            value={newItemName}
+            placeholder="新しい項目名（例: 保険証）"
+            onChange={(e) => setNewItemName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") createItem();
+            }}
+          />
+          <Button size="sm" variant="secondary" style={{ flexShrink: 0 }} onClick={createItem}>
+            追加
+          </Button>
         </div>
       </div>
 

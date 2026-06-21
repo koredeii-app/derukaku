@@ -128,9 +128,7 @@ export default function CalendarPage() {
               style={{ cursor: "pointer", textAlign: "left" }}
               onClick={() => navigate(`/calendar/${schedule.id}/edit`)}
             >
-              <span className="name">
-                {resolved.map((i) => i.name).join(" / ") || "項目未設定"}（{schedule.notification.time}）
-              </span>
+              <span className="name">{resolved.map((i) => i.name).join(" / ") || "項目未設定"}</span>
             </button>
           );
         })}

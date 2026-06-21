@@ -1,17 +1,26 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { useSettingsStore } from "../../store/settingsStore";
 import { getNotificationPermissionState, requestNotificationPermission } from "../../lib/notification";
 import { resizeImageFileToDataUrl } from "../../lib/imageResize";
-import type { FontSize, NotificationPermissionState, ThemeColor } from "../../types";
+import type { FontSize, NotificationMode, NotificationPermissionState, ThemeColor } from "../../types";
 
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
   standard: "標準",
   large: "大",
   "extra-large": "特大",
 };
+
+const NOTIFICATION_MODE_LABELS: Record<NotificationMode, string> = {
+  auto: "自動（平日のみ）",
+  daily: "毎日",
+  custom: "カスタム",
+};
+
+const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
 const PERMISSION_LABELS: Record<string, string> = {
   granted: "許可済み",
@@ -27,15 +36,23 @@ const THEME_COLOR_OPTIONS: { value: ThemeColor; label: string; swatch: string }[
   { value: "pink", label: "ピンク", swatch: "#db2777" },
 ];
 
-const SNOOZE_MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => i + 1);
-
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const fontSize = useSettingsStore((s) => s.fontSize);
   const themeColor = useSettingsStore((s) => s.themeColor);
-  const defaultSnoozeMinutes = useSettingsStore((s) => s.defaultSnoozeMinutes);
+  const notificationMode = useSettingsStore((s) => s.notificationMode);
+  const notificationTime = useSettingsStore((s) => s.notificationTime);
+  const notificationCustomDays = useSettingsStore((s) => s.notificationCustomDays);
   const notificationPermission = useSettingsStore((s) => s.notificationPermission);
   const homeBackgroundImage = useSettingsStore((s) => s.homeBackgroundImage);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
+
+  const toggleCustomDay = (day: number) => {
+    const next = notificationCustomDays.includes(day)
+      ? notificationCustomDays.filter((d) => d !== day)
+      : [...notificationCustomDays, day];
+    updateSettings({ notificationCustomDays: next });
+  };
   const [currentPermission, setCurrentPermission] = useState<NotificationPermissionState>(
     notificationPermission,
   );
@@ -117,21 +134,55 @@ export default function SettingsPage() {
       </div>
 
       <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
-        <strong>デフォルトのスヌーズ時間</strong>
-        <label htmlFor="default-snooze-minutes" style={{ display: "none" }}>
-          スヌーズ時間（分）
-        </label>
-        <select
-          id="default-snooze-minutes"
-          value={defaultSnoozeMinutes}
-          onChange={(e) => updateSettings({ defaultSnoozeMinutes: Number(e.target.value) })}
-        >
-          {SNOOZE_MINUTE_OPTIONS.map((minutes) => (
-            <option key={minutes} value={minutes}>
-              {minutes}分
-            </option>
+        <strong>通知</strong>
+        <div className="row" style={{ flexWrap: "wrap" }}>
+          {(Object.keys(NOTIFICATION_MODE_LABELS) as NotificationMode[]).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className="chip"
+              data-selected={notificationMode === mode}
+              onClick={() => updateSettings({ notificationMode: mode })}
+            >
+              {NOTIFICATION_MODE_LABELS[mode]}
+            </button>
           ))}
-        </select>
+        </div>
+        <label htmlFor="notification-time">通知時刻</label>
+        <input
+          id="notification-time"
+          type="time"
+          value={notificationTime}
+          onChange={(e) => updateSettings({ notificationTime: e.target.value })}
+        />
+        {notificationMode === "custom" && (
+          <>
+            <label>通知する曜日</label>
+            <div className="row" style={{ flexWrap: "wrap" }}>
+              {WEEKDAY_LABELS.map((label, day) => (
+                <button
+                  key={day}
+                  type="button"
+                  className="chip"
+                  data-selected={notificationCustomDays.includes(day)}
+                  onClick={() => toggleCustomDay(day)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
+        <strong>特別な予定</strong>
+        <p style={{ margin: 0, color: "var(--color-text-muted)" }}>
+          通院や旅行など、特定の日だけ確認したいセットはカレンダーから登録できます。
+        </p>
+        <Button variant="secondary" onClick={() => navigate("/calendar")}>
+          カレンダーを開く
+        </Button>
       </div>
 
       <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>

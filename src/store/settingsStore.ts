@@ -8,8 +8,10 @@ interface SettingsState extends AppSettings {
 
 const defaultSettings: AppSettings = {
   fontSize: "standard",
-  defaultSnoozeMinutes: 10,
   notificationPermission: "default",
+  notificationMode: "auto",
+  notificationTime: "07:30",
+  notificationCustomDays: [],
   onboardingCompleted: false,
   themeColor: "blue",
 };
