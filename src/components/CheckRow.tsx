@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
+import { playPoyon } from "../lib/sound";
 
 interface CheckRowProps {
   label: string;
@@ -68,6 +69,7 @@ export function CheckRow({ label, icon, checked, onToggle, onSwipeExclude }: Che
       suppressClickRef.current = false;
       return;
     }
+    playPoyon();
     onToggle();
   };
 

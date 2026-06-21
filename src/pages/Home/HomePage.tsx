@@ -64,8 +64,6 @@ export default function HomePage() {
     });
   };
 
-  const allChecked = todayItems.length > 0 && todayItems.every((t) => checkedById.get(t.item.id));
-
   return (
     <div
       className={`page${homeBackgroundImage ? " page-bg-image" : ""}`}
@@ -90,8 +88,6 @@ export default function HomePage() {
           />
         ))}
       </div>
-
-      {allChecked && <p className="page-subtitle">確認完了</p>}
 
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>
