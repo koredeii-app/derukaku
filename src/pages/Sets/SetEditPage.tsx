@@ -14,6 +14,10 @@ export default function SetEditPage() {
   const addSet = useSetsStore((s) => s.addSet);
   const updateSet = useSetsStore((s) => s.updateSet);
   const removeSet = useSetsStore((s) => s.removeSet);
+  const schedules = useSchedulesStore((s) => s.schedules);
+  const addSchedule = useSchedulesStore((s) => s.addSchedule);
+  const updateSchedule = useSchedulesStore((s) => s.updateSchedule);
+  const removeSchedule = useSchedulesStore((s) => s.removeSchedule);
   const removeSetRefFromSchedules = useSchedulesStore((s) => s.removeSetReference);
   const removeItemRefFromSets = useSetsStore((s) => s.removeItemReference);
   const removeItemRefFromSchedules = useSchedulesStore((s) => s.removeItemReference);
@@ -22,9 +26,13 @@ export default function SetEditPage() {
   const removeItem = useItemsStore((s) => s.removeItem);
 
   const existing = setId ? sets.find((s) => s.id === setId) : undefined;
+  const dailySchedule = existing
+    ? schedules.find((s) => s.recurrence.type === "daily" && s.setIds.includes(existing.id))
+    : undefined;
   const [name, setName] = useState(existing?.name ?? "");
   const [selectedIds, setSelectedIds] = useState<string[]>(existing?.itemIds ?? []);
   const [newItemName, setNewItemName] = useState("");
+  const [alwaysActive, setAlwaysActive] = useState(Boolean(dailySchedule));
 
   const toggleItem = (id: string) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
@@ -48,13 +56,30 @@ export default function SetEditPage() {
     setSelectedIds((prev) => prev.filter((id) => id !== item.id));
   };
 
+  const syncDailySchedule = (setIdToSync: string) => {
+    const current = schedules.find(
+      (s) => s.recurrence.type === "daily" && s.setIds.includes(setIdToSync),
+    );
+    if (alwaysActive && !current) {
+      addSchedule({ recurrence: { type: "daily" }, setIds: [setIdToSync], itemIds: [] });
+    } else if (!alwaysActive && current) {
+      if (current.setIds.length === 1) {
+        removeSchedule(current.id);
+      } else {
+        updateSchedule(current.id, { setIds: current.setIds.filter((id) => id !== setIdToSync) });
+      }
+    }
+  };
+
   const save = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
     if (existing) {
       updateSet(existing.id, { name: trimmed, itemIds: selectedIds });
+      syncDailySchedule(existing.id);
     } else {
-      addSet(trimmed, selectedIds);
+      const created = addSet(trimmed, selectedIds);
+      syncDailySchedule(created.id);
     }
     navigate("/sets");
   };
@@ -79,6 +104,21 @@ export default function SetEditPage() {
           placeholder="例: 仕事セット"
           onChange={(e) => setName(e.target.value)}
         />
+      </div>
+
+      <div className="stack" style={{ marginBottom: "var(--space-4)" }}>
+        <label>毎日の確認に含める</label>
+        <button
+          type="button"
+          className="chip"
+          data-selected={alwaysActive}
+          onClick={() => setAlwaysActive((prev) => !prev)}
+        >
+          毎日表示する{alwaysActive ? "（ON）" : "（OFF）"}
+        </button>
+        <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: "0.85rem" }}>
+          OFFのままだとこのセットは「今日の確認」に出てきません。通院や旅行など特定の日だけ出したい場合はカレンダーから予定として登録してください。
+        </p>
       </div>
 
       <div className="stack" style={{ marginBottom: "var(--space-5)" }}>
