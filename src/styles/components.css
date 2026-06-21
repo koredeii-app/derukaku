@@ -74,6 +74,8 @@
   font-weight: 600;
   color: var(--color-text);
   text-align: left;
+  transition: padding 0.2s ease, gap 0.2s ease, font-size 0.2s ease,
+    border-radius 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
 .check-row[data-checked="true"] {
@@ -98,11 +100,36 @@
   justify-content: center;
   font-size: 1.1rem;
   color: #fff;
+  transition: width 0.2s ease, height 0.2s ease, font-size 0.2s ease;
 }
 
 .check-row[data-checked="true"] .check-box {
   background: var(--color-success);
   border-color: var(--color-success);
+}
+
+.swipe-row-checked {
+  align-self: flex-end;
+  transition: align-self 0.2s ease;
+}
+
+.swipe-row-checked .check-row {
+  width: auto;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+  font-size: 0.95rem;
+  border-radius: 999px;
+}
+
+.swipe-row-checked .check-box {
+  width: 22px;
+  height: 22px;
+  font-size: 0.85rem;
+}
+
+.swipe-row-checked .check-row .check-icon {
+  font-size: 1.1rem;
 }
 
 .list-item {

@@ -20,7 +20,7 @@ export function CheckRow({ label, icon, checked, onToggle, onSwipeExclude }: Che
   const suppressClickRef = useRef(false);
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!onSwipeExclude) return;
+    if (!onSwipeExclude || checked) return;
     const startX = e.clientX;
     const startY = e.clientY;
     isHorizontalRef.current = false;
@@ -72,7 +72,10 @@ export function CheckRow({ label, icon, checked, onToggle, onSwipeExclude }: Che
   };
 
   return (
-    <div className="swipe-row" onPointerDown={handlePointerDown}>
+    <div
+      className={`swipe-row${checked ? " swipe-row-checked" : ""}`}
+      onPointerDown={handlePointerDown}
+    >
       <div className="swipe-row-hint">除外</div>
       <button
         type="button"
