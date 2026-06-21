@@ -5,6 +5,7 @@ import { Button } from "../../components/Button";
 import { useSetsStore } from "../../store/setsStore";
 import { useItemsStore } from "../../store/itemsStore";
 import { useSchedulesStore } from "../../store/schedulesStore";
+import type { Item } from "../../types";
 
 export default function SetEditPage() {
   const navigate = useNavigate();
@@ -14,8 +15,11 @@ export default function SetEditPage() {
   const updateSet = useSetsStore((s) => s.updateSet);
   const removeSet = useSetsStore((s) => s.removeSet);
   const removeSetRefFromSchedules = useSchedulesStore((s) => s.removeSetReference);
+  const removeItemRefFromSets = useSetsStore((s) => s.removeItemReference);
+  const removeItemRefFromSchedules = useSchedulesStore((s) => s.removeItemReference);
   const items = useItemsStore((s) => s.items);
   const addItem = useItemsStore((s) => s.addItem);
+  const removeItem = useItemsStore((s) => s.removeItem);
 
   const existing = setId ? sets.find((s) => s.id === setId) : undefined;
   const [name, setName] = useState(existing?.name ?? "");
@@ -32,6 +36,16 @@ export default function SetEditPage() {
     const item = addItem(trimmed);
     setSelectedIds((prev) => [...prev, item.id]);
     setNewItemName("");
+  };
+
+  const handleDeleteItem = (item: Item) => {
+    if (!window.confirm(`「${item.name}」を完全に削除します。すべてのセットから削除されますがよろしいですか？`)) {
+      return;
+    }
+    removeItem(item.id);
+    removeItemRefFromSets(item.id);
+    removeItemRefFromSchedules(item.id);
+    setSelectedIds((prev) => prev.filter((id) => id !== item.id));
   };
 
   const save = () => {
@@ -72,15 +86,24 @@ export default function SetEditPage() {
         {items.length === 0 && <div className="empty-state card">まだ項目がありません</div>}
         <div className="row" style={{ flexWrap: "wrap" }}>
           {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="chip"
-              data-selected={selectedIds.includes(item.id)}
-              onClick={() => toggleItem(item.id)}
-            >
-              {item.name}
-            </button>
+            <span key={item.id} className="chip-group">
+              <button
+                type="button"
+                className="chip"
+                data-selected={selectedIds.includes(item.id)}
+                onClick={() => toggleItem(item.id)}
+              >
+                {item.name}
+              </button>
+              <button
+                type="button"
+                className="chip-delete"
+                aria-label={`${item.name}を削除`}
+                onClick={() => handleDeleteItem(item)}
+              >
+                ×
+              </button>
+            </span>
           ))}
         </div>
 

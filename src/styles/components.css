@@ -229,6 +229,34 @@ label {
   color: #fff;
 }
 
+.chip-group {
+  position: relative;
+  display: inline-flex;
+}
+
+.chip-delete {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  color: #ffffff;
+  font-size: 0.8rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.chip-delete:active {
+  transform: scale(0.9);
+}
+
 .bottom-nav {
   display: flex;
   border-top: 1px solid var(--color-border);
