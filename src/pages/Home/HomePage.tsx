@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckRow } from "../../components/CheckRow";
 import { ToastStack } from "../../components/Toast";
 import type { ToastItem } from "../../components/Toast";
@@ -10,6 +10,7 @@ import { useSettingsStore } from "../../store/settingsStore";
 import { toDateKey } from "../../lib/recurrence";
 import { resolveTodayItems } from "../../lib/dedupe";
 import { uuid } from "../../lib/uuid";
+import { playComplete } from "../../lib/sound";
 
 export default function HomePage() {
   const schedules = useSchedulesStore((s) => s.schedules);
@@ -40,6 +41,15 @@ export default function HomePage() {
     () => new Map(session?.items.map((r) => [r.itemId, r.checked]) ?? []),
     [session],
   );
+
+  const allChecked = todayItems.length > 0 && todayItems.every((t) => checkedById.get(t.item.id));
+  const prevAllCheckedRef = useRef(allChecked);
+  useEffect(() => {
+    if (allChecked && !prevAllCheckedRef.current) {
+      playComplete();
+    }
+    prevAllCheckedRef.current = allChecked;
+  }, [allChecked]);
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const dismissToast = (id: string) => setToasts((prev) => prev.filter((t) => t.id !== id));
