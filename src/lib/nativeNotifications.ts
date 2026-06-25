@@ -76,7 +76,9 @@ type PendingNotification = {
   title: string;
   body: string;
   channelId: string;
-  schedule: { at: Date };
+  // allowWhileIdle がないと Android の setExact は Doze(画面オフ・放置)中に
+  // 配信が遅延される。1段階目だけ気づかれて以降が鳴らない不具合の原因だったため必須。
+  schedule: { at: Date; allowWhileIdle: true };
 };
 
 function shouldFireOnDay(mode: NotificationMode, customDays: number[], day: number): boolean {
@@ -122,7 +124,7 @@ function buildEscalationNotifications(
         title: NORMAL_TITLE,
         body: NORMAL_BODY,
         channelId: NORMAL_CHANNEL_ID,
-        schedule: { at: stage1At },
+        schedule: { at: stage1At, allowWhileIdle: true },
       });
     }
 
@@ -133,7 +135,7 @@ function buildEscalationNotifications(
         title: STRONG_TITLE,
         body: STRONG_BODY,
         channelId: ALERT_CHANNEL_ID,
-        schedule: { at: stage2At },
+        schedule: { at: stage2At, allowWhileIdle: true },
       });
     }
 
@@ -145,7 +147,7 @@ function buildEscalationNotifications(
         title: ALARM_TITLE,
         body: ALARM_BODY,
         channelId: ALERT_CHANNEL_ID,
-        schedule: { at: stage3At },
+        schedule: { at: stage3At, allowWhileIdle: true },
       });
     }
   }
