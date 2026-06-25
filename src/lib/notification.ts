@@ -105,8 +105,9 @@ export async function syncNativeStandingNotification(
   mode: NotificationMode,
   time: string,
   customDays: number[],
+  todayCompleted: boolean,
 ): Promise<void> {
-  await syncStandingNativeNotification(mode, time, customDays);
+  await syncStandingNativeNotification(mode, time, customDays, todayCompleted);
 }
 
 /** ネイティブ実行時のみ意味を持つ。「正確なアラーム」がOSで許可されているか */

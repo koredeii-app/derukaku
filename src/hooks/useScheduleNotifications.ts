@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useSettingsStore } from "../store/settingsStore";
+import { useSessionsStore } from "../store/sessionsStore";
+import { toDateKey } from "../lib/recurrence";
 import { scheduleStandingNotification, showNotification, syncNativeStandingNotification } from "../lib/notification";
 
 /**
@@ -15,6 +17,10 @@ export function useScheduleNotifications(onFire: () => void) {
   const notificationTime = useSettingsStore((s) => s.notificationTime);
   const notificationCustomDays = useSettingsStore((s) => s.notificationCustomDays);
   const notificationPermission = useSettingsStore((s) => s.notificationPermission);
+  const todayCompleted = useSessionsStore((s) => {
+    const todayKey = toDateKey(new Date());
+    return s.sessions.find((session) => session.targetDate === todayKey)?.status === "completed";
+  });
   const onFireRef = useRef(onFire);
   onFireRef.current = onFire;
 
@@ -23,9 +29,12 @@ export function useScheduleNotifications(onFire: () => void) {
       if (notificationPermission !== "granted") return;
 
       const sync = () =>
-        syncNativeStandingNotification(notificationMode, notificationTime, notificationCustomDays).catch(
-          (err) => console.error("Failed to sync native notification", err),
-        );
+        syncNativeStandingNotification(
+          notificationMode,
+          notificationTime,
+          notificationCustomDays,
+          todayCompleted,
+        ).catch((err) => console.error("Failed to sync native notification", err));
       sync();
 
       // 設定画面で「アラームとリマインダー」許可を変更して戻ってきた際に、
@@ -44,5 +53,6 @@ export function useScheduleNotifications(onFire: () => void) {
       },
     );
     return cancel;
-  }, [notificationMode, notificationTime, notificationCustomDays, notificationPermission]);
+    // todayCompleted はネイティブ側の再スケジュール(=今日完了後の強制完了)にのみ使うため依存に含める
+  }, [notificationMode, notificationTime, notificationCustomDays, notificationPermission, todayCompleted]);
 }
