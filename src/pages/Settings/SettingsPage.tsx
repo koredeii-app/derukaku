@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { useSettingsStore } from "../../store/settingsStore";
-import { getNotificationPermissionState, requestNotificationPermission } from "../../lib/notification";
+import {
+  getExactAlarmPermission,
+  getNotificationPermissionState,
+  requestExactAlarmPermissionSetting,
+  requestNotificationPermission,
+} from "../../lib/notification";
 import { resizeImageFileToDataUrl } from "../../lib/imageResize";
 import type { FontSize, NotificationMode, NotificationPermissionState, ThemeColor } from "../../types";
 
@@ -57,15 +63,27 @@ export default function SettingsPage() {
     notificationPermission,
   );
   const [backgroundError, setBackgroundError] = useState<string | null>(null);
+  const [exactAlarmGranted, setExactAlarmGranted] = useState(true);
 
   useEffect(() => {
     getNotificationPermissionState().then(setCurrentPermission);
+
+    const refreshExactAlarm = () => {
+      getExactAlarmPermission().then(setExactAlarmGranted);
+    };
+    refreshExactAlarm();
+    document.addEventListener("visibilitychange", refreshExactAlarm);
+    return () => document.removeEventListener("visibilitychange", refreshExactAlarm);
   }, []);
 
   const handleRequestPermission = async () => {
     const result = await requestNotificationPermission();
     setCurrentPermission(result);
     updateSettings({ notificationPermission: result });
+  };
+
+  const handleRequestExactAlarm = async () => {
+    await requestExactAlarmPermissionSetting();
   };
 
   const handleBackgroundChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -226,6 +244,16 @@ export default function SettingsPage() {
           <Button onClick={handleRequestPermission}>通知を許可する</Button>
         )}
       </div>
+
+      {Capacitor.isNativePlatform() && !exactAlarmGranted && (
+        <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
+          <strong>通知のタイミングがずれる場合</strong>
+          <p style={{ margin: 0, color: "var(--color-text-muted)" }}>
+            「アラームとリマインダー」を許可すると、設定した時刻ちょうどに通知が届くようになります（未許可だと数分ずれることがあります）。
+          </p>
+          <Button onClick={handleRequestExactAlarm}>許可設定を開く</Button>
+        </div>
+      )}
 
       <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
         <strong>データ</strong>

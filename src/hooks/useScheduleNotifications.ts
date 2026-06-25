@@ -14,13 +14,24 @@ export function useScheduleNotifications(onFire: () => void) {
   const notificationMode = useSettingsStore((s) => s.notificationMode);
   const notificationTime = useSettingsStore((s) => s.notificationTime);
   const notificationCustomDays = useSettingsStore((s) => s.notificationCustomDays);
+  const notificationPermission = useSettingsStore((s) => s.notificationPermission);
   const onFireRef = useRef(onFire);
   onFireRef.current = onFire;
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      syncNativeStandingNotification(notificationMode, notificationTime, notificationCustomDays);
-      return;
+      if (notificationPermission !== "granted") return;
+
+      const sync = () =>
+        syncNativeStandingNotification(notificationMode, notificationTime, notificationCustomDays).catch(
+          (err) => console.error("Failed to sync native notification", err),
+        );
+      sync();
+
+      // 設定画面で「アラームとリマインダー」許可を変更して戻ってきた際に、
+      // 正確なアラームで再スケジュールし直すため。
+      document.addEventListener("visibilitychange", sync);
+      return () => document.removeEventListener("visibilitychange", sync);
     }
 
     const cancel = scheduleStandingNotification(
@@ -33,5 +44,5 @@ export function useScheduleNotifications(onFire: () => void) {
       },
     );
     return cancel;
-  }, [notificationMode, notificationTime, notificationCustomDays]);
+  }, [notificationMode, notificationTime, notificationCustomDays, notificationPermission]);
 }

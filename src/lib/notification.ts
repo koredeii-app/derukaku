@@ -1,7 +1,9 @@
 import { Capacitor } from "@capacitor/core";
 import type { NotificationMode, NotificationPermissionState } from "../types";
 import {
+  checkExactAlarmPermission,
   getNativePermissionState,
+  requestExactAlarmPermission,
   requestNativePermission,
   syncStandingNativeNotification,
 } from "./nativeNotifications";
@@ -105,4 +107,16 @@ export async function syncNativeStandingNotification(
   customDays: number[],
 ): Promise<void> {
   await syncStandingNativeNotification(mode, time, customDays);
+}
+
+/** ネイティブ実行時のみ意味を持つ。「正確なアラーム」がOSで許可されているか */
+export async function getExactAlarmPermission(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return true;
+  return checkExactAlarmPermission();
+}
+
+/** ネイティブ実行時のみ意味を持つ。OSの「アラームとリマインダー」許可設定画面を開く */
+export async function requestExactAlarmPermissionSetting(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return true;
+  return requestExactAlarmPermission();
 }
