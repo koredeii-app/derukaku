@@ -6,8 +6,10 @@ import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { useSettingsStore } from "../../store/settingsStore";
 import {
+  getBatteryOptimizationExempt,
   getExactAlarmPermission,
   getNotificationPermissionState,
+  requestBatteryOptimizationExemption,
   requestExactAlarmPermissionSetting,
   requestNotificationPermission,
 } from "../../lib/notification";
@@ -64,16 +66,18 @@ export default function SettingsPage() {
   );
   const [backgroundError, setBackgroundError] = useState<string | null>(null);
   const [exactAlarmGranted, setExactAlarmGranted] = useState(true);
+  const [batteryExempt, setBatteryExempt] = useState(true);
 
   useEffect(() => {
     getNotificationPermissionState().then(setCurrentPermission);
 
-    const refreshExactAlarm = () => {
+    const refresh = () => {
       getExactAlarmPermission().then(setExactAlarmGranted);
+      getBatteryOptimizationExempt().then(setBatteryExempt);
     };
-    refreshExactAlarm();
-    document.addEventListener("visibilitychange", refreshExactAlarm);
-    return () => document.removeEventListener("visibilitychange", refreshExactAlarm);
+    refresh();
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
   }, []);
 
   const handleRequestPermission = async () => {
@@ -84,6 +88,10 @@ export default function SettingsPage() {
 
   const handleRequestExactAlarm = async () => {
     await requestExactAlarmPermissionSetting();
+  };
+
+  const handleRequestBatteryExemption = async () => {
+    await requestBatteryOptimizationExemption();
   };
 
   const handleBackgroundChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -252,6 +260,16 @@ export default function SettingsPage() {
             「アラームとリマインダー」を許可すると、設定した時刻ちょうどに通知が届くようになります（未許可だと数分ずれることがあります）。
           </p>
           <Button onClick={handleRequestExactAlarm}>許可設定を開く</Button>
+        </div>
+      )}
+
+      {Capacitor.isNativePlatform() && !batteryExempt && (
+        <div className="card stack" style={{ marginBottom: "var(--space-4)" }}>
+          <strong>画面を消したまま放置すると通知が来ない場合</strong>
+          <p style={{ margin: 0, color: "var(--color-text-muted)" }}>
+            「バッテリーの最適化」の対象から外すと、画面を消して放置していても2段階目・3段階目の通知が届きやすくなります。
+          </p>
+          <Button onClick={handleRequestBatteryExemption}>除外を許可する</Button>
         </div>
       )}
 
