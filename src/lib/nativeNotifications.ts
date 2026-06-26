@@ -1,39 +1,16 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import type { NotificationMode } from "../types";
 
-const NORMAL_TITLE = "デルカク✓ の時間です";
-const NORMAL_BODY = "出発前の忘れ物チェックをしましょう";
-const STRONG_TITLE = "デルカク✓ まだ確認できていません";
-const STRONG_BODY = "出発前の忘れ物チェックを済ませましょう";
-const ALARM_TITLE = "デルカク✓ 確認をお願いします！";
-const ALARM_BODY = "タップして今日の確認を完了してください";
+const TITLE = "デルカク✓ の時間です";
+const BODY = "出発前の忘れ物チェックをしましょう";
 
-const NORMAL_CHANNEL_ID = "derukaku-normal";
 const ALERT_CHANNEL_ID = "derukaku-alert";
 
-// 1段階目(通常)からの遅延(分)
-const STAGE2_OFFSET_MIN = 5;
-const STAGE3_OFFSET_MIN = 10;
-// 3段階目(アラーム風)は短い間隔で繰り返し、止めるまで鳴り続ける感を近似する
-const STAGE3_REPEAT_COUNT = 5;
-const STAGE3_REPEAT_INTERVAL_SEC = 30;
 // 何日先までスケジュールしておくか(アプリを開くたびに再計算されるので十分な余裕を持たせる)
 const DAYS_AHEAD = 7;
 
 /**
- * 1段階目の通常通知向けチャンネル。
- */
-async function ensureNormalChannel(): Promise<void> {
-  await LocalNotifications.createChannel({
-    id: NORMAL_CHANNEL_ID,
-    name: "デルカク通知",
-    description: "出発前の確認をお知らせします",
-    importance: 3,
-  });
-}
-
-/**
- * 2・3段階目向け、振動＋しっかりした通知音で届く専用チャンネル。
+ * 振動＋しっかりした通知音で届く専用チャンネル。
  * 既に存在する場合は何もしない（Android はチャンネル作成後の重要度変更を許さないため、
  * 一度作成したチャンネルの設定を変えるにはアプリのデータ削除が必要）。
  */
@@ -76,8 +53,7 @@ type PendingNotification = {
   title: string;
   body: string;
   channelId: string;
-  // allowWhileIdle がないと Android の setExact は Doze(画面オフ・放置)中に
-  // 配信が遅延される。1段階目だけ気づかれて以降が鳴らない不具合の原因だったため必須。
+  // allowWhileIdle がないと Android の setExact は Doze(画面オフ・放置)中に配信が遅延される。
   schedule: { at: Date; allowWhileIdle: true };
 };
 
@@ -94,12 +70,11 @@ function atTime(base: Date, hour: number, minute: number, extraSeconds = 0): Dat
 }
 
 /**
- * 今日から DAYS_AHEAD 日分、3段階の通知(通常→強め→アラーム風の連続通知)を組み立てる。
- * todayCompleted が true の場合、今日(offset 0)分はすべて除外する
- * （「チェック完了後のものは強制完了とする」の実装）。
- * 過去の時刻になってしまうものはその日もスケジュールしない。
+ * 今日から DAYS_AHEAD 日分の通知を組み立てる。
+ * todayCompleted が true の場合、今日(offset 0)分は除外する(完了済みなら催促しない)。
+ * 過去の時刻になってしまう日もスケジュールしない。
  */
-function buildEscalationNotifications(
+function buildNotifications(
   mode: NotificationMode,
   time: string,
   customDays: number[],
@@ -116,40 +91,16 @@ function buildEscalationNotifications(
     day.setDate(day.getDate() + offset);
     if (!shouldFireOnDay(mode, customDays, day.getDay())) continue;
 
-    const id = 1 + offset * 10;
-    const stage1At = atTime(day, hour, minute);
-    if (stage1At.getTime() > now) {
-      notifications.push({
-        id,
-        title: NORMAL_TITLE,
-        body: NORMAL_BODY,
-        channelId: NORMAL_CHANNEL_ID,
-        schedule: { at: stage1At, allowWhileIdle: true },
-      });
-    }
+    const at = atTime(day, hour, minute);
+    if (at.getTime() <= now) continue;
 
-    const stage2At = atTime(day, hour, minute, STAGE2_OFFSET_MIN * 60);
-    if (stage2At.getTime() > now) {
-      notifications.push({
-        id: id + 1,
-        title: STRONG_TITLE,
-        body: STRONG_BODY,
-        channelId: ALERT_CHANNEL_ID,
-        schedule: { at: stage2At, allowWhileIdle: true },
-      });
-    }
-
-    for (let n = 0; n < STAGE3_REPEAT_COUNT; n++) {
-      const stage3At = atTime(day, hour, minute, STAGE3_OFFSET_MIN * 60 + n * STAGE3_REPEAT_INTERVAL_SEC);
-      if (stage3At.getTime() <= now) continue;
-      notifications.push({
-        id: id + 2 + n,
-        title: ALARM_TITLE,
-        body: ALARM_BODY,
-        channelId: ALERT_CHANNEL_ID,
-        schedule: { at: stage3At, allowWhileIdle: true },
-      });
-    }
+    notifications.push({
+      id: 1 + offset,
+      title: TITLE,
+      body: BODY,
+      channelId: ALERT_CHANNEL_ID,
+      schedule: { at, allowWhileIdle: true },
+    });
   }
 
   return notifications;
@@ -158,7 +109,7 @@ function buildEscalationNotifications(
 /**
  * 現在登録されているネイティブ通知をすべて取り消し、最新の通知設定で再スケジュールする。
  * OS側がスケジュールを管理するため、アプリが完全に閉じていても発火する。
- * todayCompleted が true の間は、今日分の2・3段階目(および未発火の1段階目)は組み込まれない。
+ * todayCompleted が true の間は、今日分の通知は組み込まれない。
  */
 export async function syncStandingNativeNotification(
   mode: NotificationMode,
@@ -166,7 +117,6 @@ export async function syncStandingNativeNotification(
   customDays: number[],
   todayCompleted: boolean,
 ): Promise<void> {
-  await ensureNormalChannel();
   await ensureAlertChannel();
   const pending = await LocalNotifications.getPending();
   if (pending.notifications.length > 0) {
@@ -174,7 +124,7 @@ export async function syncStandingNativeNotification(
       notifications: pending.notifications.map((n) => ({ id: n.id })),
     });
   }
-  const notifications = buildEscalationNotifications(mode, time, customDays, todayCompleted);
+  const notifications = buildNotifications(mode, time, customDays, todayCompleted);
   if (notifications.length > 0) {
     await LocalNotifications.schedule({ notifications });
   }
