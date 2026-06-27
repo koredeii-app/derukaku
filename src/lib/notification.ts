@@ -7,7 +7,6 @@ import {
   requestNativePermission,
   syncStandingNativeNotification,
 } from "./nativeNotifications";
-import { isIgnoringBatteryOptimizations, requestIgnoreBatteryOptimizations } from "./batteryOptimization";
 
 /** ネイティブ(Capacitor)とWebのどちらで動いていても、適切な方式で通知許可状態を取得する */
 export async function getNotificationPermissionState(): Promise<NotificationPermissionState> {
@@ -121,16 +120,4 @@ export async function getExactAlarmPermission(): Promise<boolean> {
 export async function requestExactAlarmPermissionSetting(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return true;
   return requestExactAlarmPermission();
-}
-
-/** ネイティブ実行時のみ意味を持つ。バッテリー最適化の対象から除外されているか */
-export async function getBatteryOptimizationExempt(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) return true;
-  return isIgnoringBatteryOptimizations();
-}
-
-/** ネイティブ実行時のみ意味を持つ。OSの「バッテリーの最適化を無視する」許可設定画面を開く */
-export async function requestBatteryOptimizationExemption(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) return true;
-  return requestIgnoreBatteryOptimizations();
 }
